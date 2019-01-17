@@ -1,0 +1,241 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<style>
+canvas {
+    border:1px solid #d3d3d3;
+    background-color: #f1f1f1;
+}
+</style>
+</head>
+<body onload="startGame()">
+<script>
+
+var myGamePiece;
+var brackets = [];
+var intervalHieght = 3000;
+var generate = true;
+
+function startGame() {
+    myGameArea.start();
+}
+
+var myGameArea = {
+    canvas : document.createElement("canvas"),
+    start : function() {
+        this.canvas.width = 180;
+        this.canvas.height = 240;
+        this.context = this.canvas.getContext("2d");
+        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+        this.frameNo = 0;
+        this.interval = setInterval(updateGameArea, 20);
+        },
+    clear : function() {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    },
+    stop : function() {
+        clearInterval(this.interval);
+    }
+}
+
+function component(width, height, color, x, y) {
+    this.width = width;
+    this.height = height;
+    this.speedX = 0;
+    this.speedY = 0;    
+    this.x = x;
+    this.y = y;
+
+    this.topLeft = 0;
+    this.topRight = 0;
+    this.bottomLeft = 0;
+    this.bottomRight = 0;
+
+    this.move = true;
+    this.update = function() {
+        ctx = myGameArea.context;
+        ctx.fillStyle = color;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+    this.newPos = function() {
+        this.x += this.speedX;
+        this.y += this.speedY;        
+    }
+}
+
+function updateGameArea()
+{
+    var x, height, gap, minHeight, maxHeight, minGap, maxGap;
+    
+    myGameArea.clear();
+    myGameArea.frameNo += 1;
+
+    if(generate == true)
+    {
+        if (myGameArea.frameNo == 1 || everyinterval(1)) {
+            random = Math.floor(Math.random()*Math.floor(4));
+            if(random == 0)
+                myGamePiece = new component(20, 20, "red", 80, -21);
+            else if (random == 1)
+                myGamePiece = new component(40, 20, "red", 80, -21);
+            else if (random == 2)
+                myGamePiece = new component(60, 20, "red", 80, -21);
+            else
+                myGamePiece = new component(80, 20, "red", 80, -21);
+            brackets.push(myGamePiece);
+            generate = false;
+        }
+    }
+
+    for (z = 0; z < brackets.length; z++)
+    {
+        testlength = 0;
+        count=0;
+        if(brackets[z].move == false)
+        {
+        	for (k = 0; k < brackets.length; k++)
+        	{
+            	if (brackets[k].y == brackets[z].y && brackets[k].move == false)
+            	{
+                	testlength += brackets[k].width;
+                	count++;
+            	}
+        	}
+    	}
+        if (testlength > 170)
+        {
+            //remove objects from array brackets
+            limit = brackets[z].y;
+            for (v = 0; v < count; v++)
+            {
+                pos = -1;
+                for (w = 0; w < brackets.length; w++)
+                {
+                    if (limit == brackets[w].y)
+                    {
+                        pos = w;
+                    }
+                }
+                brackets.splice(pos, 1);
+            }
+            //move all objects higher than this row down 20
+            for (p = 0; p < brackets.length; p++)
+            {
+                if (brackets[p].y < limit)
+                {
+                    brackets[p].y = (brackets[p].y + 20);
+                }
+            }
+        }
+    }
+
+    //test for collision
+    for (i = 0; i < brackets.length; i += 1)
+    {
+        if(brackets[i].move == true)
+        {
+            brackets[i].y += 1;
+            if (brackets[i].y != 220)   //if not at the bottom
+            {
+                for (j = 0; j < brackets.length; j++)   //loop through the list of pieces on the board
+                {
+                    //check if your bottom segment matches the top segment of another piece
+                    if (((brackets[i].x < (brackets[j].x + brackets[j].width)) && (brackets[i].x + brackets[i].width) > brackets[j].x) || (((brackets[i].x + brackets[i].width) > brackets[j].x) && (brackets[i].x < (brackets[j].x + brackets[j].width))))
+                    {
+                        //check if you are up against each other
+                        if (brackets[j].y == (brackets[i].y + 20))
+                        {
+                            if(brackets[i].y < 0)
+                            {
+                                window.alert("Game over!");
+                                location.reload();
+                            }
+                            else
+                            {
+                                generate = true;    
+                            }
+                            brackets[i].move = false;
+                            
+                        }
+                    }
+                }
+            }
+            else
+            {
+                brackets[i].move = false;
+
+                generate = true;
+            }
+            brackets[i].update();
+        }
+        else
+        {
+            myGamePiece = new component(brackets[i].width, brackets[i].height, "red", brackets[i].x, brackets[i].y);
+            myGamePiece.update();
+        }
+    }
+}
+
+function everyinterval(n) {
+    if ((myGameArea.frameNo / n) % 1 == 0) {return true;}
+    return false;
+}
+
+function moveleft() {
+    if (brackets[brackets.length - 1].x > 0)
+    {
+        j = brackets.length - 1;
+        possible = 1;
+        //loop to check we aren't trying to go into a piece
+        for (i = 0; i < brackets.length; i++)
+        {
+            //if my height overlaps with the height of the piece currently under consideration
+            if (((brackets[i].y > brackets[j].y) && (brackets[i].y < (brackets[j].y + 20))) || (((brackets[i].y + 20) > brackets[j].y) && (brackets[i].y + 20) < (brackets[j] + 20)))
+            {
+                //if my left edge is adjacent to it's right edge
+                if ((brackets[i].x + brackets[i].width) == brackets[j].x)
+                    possible = 0;
+            }
+        }
+        if (possible)
+            brackets[j].x += -20;
+    }
+}
+
+function moveright() {
+    if (brackets[brackets.length - 1].x + brackets[brackets.length - 1].width < 180)
+    {
+        j = brackets.length - 1;
+        possible = 1;
+        //loop to check we aren't trying to go into a piece
+        for (i = 0; i < brackets.length; i++)
+        {
+            //if my height overlaps with the height of the piece currently under consideration
+            if (((brackets[i].y > brackets[j].y) && (brackets[i].y < (brackets[j].y + 20))) || (((brackets[i].y + 20) > brackets[j].y) && (brackets[i].y + 20) < (brackets[j] + 20))) {
+                //if my right edge is adjacent to it's left edge
+                if (brackets[i].x == (brackets[j].x + brackets[j].width))
+                    possible = 0;
+            }
+        }
+        if (possible)
+            brackets[j].x += 20;
+    }
+}
+
+function clearmove(myGamePiece) {
+    myGamePiece.x = 0; 
+    myGamePiece.y = 0; 
+}
+</script>
+<div style="text-align:center;width:480px;">
+  
+  <button onmousedown="moveleft()" onmouseup="clearmove()" ontouchstart="moveleft()">LEFT</button>
+  <button onmousedown="moveright()" onmouseup="clearmove()" ontouchstart="moveright()">RIGHT</button><br><br>
+  
+</div>
+</body>
+</html>
+
+

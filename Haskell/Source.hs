@@ -1,5 +1,3 @@
---            HOMEWORK 4   
-
 --Question #1
 deleteDuplicate :: (Eq a) => [a] -> [a]
 deleteDuplicate [] = []
